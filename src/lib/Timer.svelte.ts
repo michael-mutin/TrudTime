@@ -1,5 +1,5 @@
 import { Duration, type TimeDisplay } from "./Duration.svelte";
-import sound from '$lib/assets/universfield-new-notification-050-494248.mp3';
+
 
 export enum TimerState {
     Running,
@@ -12,7 +12,7 @@ export class Timer {
     _intervalId: number | undefined;
     _timerState = $state(TimerState.Paused);
 
-    constructor(private _duration: Duration) {
+    constructor(private _duration: Duration, private _finishCallback: () => void = () => {}) {
         this._timeLeft = _duration.clone();
         this._intervalId = undefined;
     }
@@ -32,9 +32,7 @@ export class Timer {
                 if (this._timeLeft.isZero()) {
                     this._timerState = TimerState.Finished;
                     clearInterval(this._intervalId as number);
-                    // TODO: notification
-                    const audio = new Audio(sound);
-                    audio.play()
+                    this._finishCallback();
                 } else {
                     this._timeLeft.subtract1Sec();
                 }

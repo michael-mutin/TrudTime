@@ -3,12 +3,27 @@
   import TimeInput from "$lib/components/TimeInput.svelte";
   import { Duration } from "$lib/Duration.svelte";
   import { Timer, TimerState } from "$lib/Timer.svelte";
-  import type { MinimalResolutionCacheHost } from "typescript";
+  import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification'
+  import sound from '$lib/assets/universfield-new-notification-060-494264.mp3';
+
+  let permissionGranted = $state(false);
+
+  $effect(() => {
+    async function getPermission() {
+      permissionGranted = await isPermissionGranted();
+      if (!permissionGranted) {
+        const permission = await requestPermission();
+        permissionGranted = permission === 'granted';
+      }
+    }
+    
+    getPermission();
+  })
+
+  let timer = $state(new Timer(new Duration(0, 0, 5), onTimerFinish));
+  let timeDisplay = $derived(timer.getTimeDisplay());
 
   let dialogSetTimer: HTMLDialogElement;
-
-  let timer = $state(new Timer(new Duration(0, 0, 5)));
-  let timeDisplay = $derived(timer.getTimeDisplay());
 
   function changeTimer() {
     if (timer.timerState === TimerState.Running) {
@@ -19,7 +34,15 @@
 
   function setNewTimer(hours: number, minutes: number, seconds: number) {
     const duration = new Duration(hours, minutes, seconds);
-    timer = new Timer(duration);
+    timer = new Timer(duration, onTimerFinish);
+  }
+
+  function onTimerFinish() {
+    const audio = new Audio(sound);
+    audio.play();
+    if (permissionGranted) {
+      sendNotification({ title: '⌛', body: 'Time\'s up!' });
+    }
   }
   // TODO: After timer finished or skipped the user shall be asked how much time should be captured
 </script>
