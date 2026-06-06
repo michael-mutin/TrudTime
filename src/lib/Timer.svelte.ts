@@ -1,4 +1,5 @@
 import { Duration, type TimeDisplay } from "./Duration.svelte";
+import sound from '$lib/assets/universfield-new-notification-050-494248.mp3';
 
 export enum TimerState {
     Running,
@@ -31,6 +32,9 @@ export class Timer {
                 if (this._timeLeft.isZero()) {
                     this._timerState = TimerState.Finished;
                     clearInterval(this._intervalId as number);
+                    // TODO: notification
+                    const audio = new Audio(sound);
+                    audio.play()
                 } else {
                     this._timeLeft.subtract1Sec();
                 }
