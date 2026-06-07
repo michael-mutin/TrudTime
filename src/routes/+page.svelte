@@ -2,11 +2,16 @@
   import Clock from "$lib/components/Clock.svelte";
   import TimeInput from "$lib/components/TimeInput.svelte";
   import { Duration } from "$lib/Duration.svelte";
+  import { invoke } from "@tauri-apps/api/core";
   import { Timer, TimerState } from "$lib/Timer.svelte";
   import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification'
-  import sound from '$lib/assets/universfield-new-notification-060-494264.mp3';
 
-  let permissionGranted = $state(false);
+  let timer = $state(new Timer(new Duration(0, 0, 5), onTimerFinish));
+  let timeDisplay = $derived(timer.getTimeDisplay());
+
+  let dialogSetTimer: HTMLDialogElement;
+
+  let permissionGranted = false;
 
   $effect(() => {
     async function getPermission() {
@@ -20,10 +25,6 @@
     getPermission();
   })
 
-  let timer = $state(new Timer(new Duration(0, 0, 5), onTimerFinish));
-  let timeDisplay = $derived(timer.getTimeDisplay());
-
-  let dialogSetTimer: HTMLDialogElement;
 
   function changeTimer() {
     if (timer.timerState === TimerState.Running) {
@@ -37,9 +38,8 @@
     timer = new Timer(duration, onTimerFinish);
   }
 
-  function onTimerFinish() {
-    const audio = new Audio(sound);
-    audio.play();
+  async function onTimerFinish() {
+    invoke('play_sound').catch(() => {})
     if (permissionGranted) {
       sendNotification({ title: '⌛', body: 'Time\'s up!' });
     }

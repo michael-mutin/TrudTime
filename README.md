@@ -8,6 +8,3 @@ This template should help get you started developing with Tauri, SvelteKit and T
 
 ## Build
 NO_STRIP=true pnpm tauri build
-    - failend to run linuxdeploy
-appimagetool trudtime.AppDir/
-    - something is wrong with the AppRun
