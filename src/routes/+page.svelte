@@ -41,11 +41,15 @@
 
   listen("over", () => {
     timer.setDone();
+    notify();
+  })
+
+  function notify() {
     invoke('play_sound').catch(() => {})
     if (permissionGranted) {
       sendNotification({ title: '⌛', body: 'Time\'s up!' });
     }
-  })
+  }
   // TODO: After timer finished or skipped the user shall be asked how much time should be captured
 </script>
 
@@ -60,7 +64,15 @@
       <button class="timer-function" onclick={() => timer.pause()}>⏸️</button>
     {/if}
     {#if timer.timerState !== TimerState.Finished}
-      <button class="timer-function" onclick={() => timer.skip()}>⏩</button>
+      <button class="timer-function" onclick={() => {
+        timer.skip().then((successfullySkipped) => {
+          if (successfullySkipped) {
+            notify();
+          }
+        })
+        }}>
+        ⏩
+      </button>
     {/if}
     <button class="timer-function" onclick={() => timer.reset()}>↩️</button>
     <button class="timer-function" onclick={changeTimer}>✏️</button>

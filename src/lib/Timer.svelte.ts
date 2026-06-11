@@ -1,3 +1,4 @@
+import { boolean } from "zod";
 import { Duration, type TimeDisplay } from "./Duration.svelte";
 import { invoke } from "@tauri-apps/api/core";
 
@@ -64,13 +65,17 @@ export class Timer {
         }
     }
 
-    skip() {
+    skip(): Promise<boolean> {
         if (this._timerState !== TimerState.Finished) {
-            invoke<number>("stop_timer")
+            return invoke<number>("stop_timer")
                 .then((_) => {
-                    this.setDone()
+                    this.setDone();
+                    return true;
                 })
-                .catch((_) => {});
+                .catch((_) => { return false; });
+        }
+        else {
+            return Promise.resolve(false);
         }
     }
 
