@@ -36,22 +36,16 @@ export class Duration {
         return this._timeInSec % 60;
     }
 
+    get timeInSeconds(): number {
+        return this._timeInSec;
+    }
+
     clone(): Duration {
         return new Duration(this.hours, this.minutes, this.seconds)
     }
 
     isZero(): boolean {
         return (this._timeInSec === 0);
-    }
-
-    subtract1Sec(): boolean {
-        if (this.isZero()) {
-            return false;
-        }
-        else {
-            this._timeInSec -= 1;
-            return true;
-        }
     }
 
     setZero() {

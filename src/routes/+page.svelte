@@ -3,10 +3,11 @@
   import TimeInput from "$lib/components/TimeInput.svelte";
   import { Duration } from "$lib/Duration.svelte";
   import { invoke } from "@tauri-apps/api/core";
+  import { listen } from "@tauri-apps/api/event";
   import { Timer, TimerState } from "$lib/Timer.svelte";
   import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification'
 
-  let timer = $state(new Timer(new Duration(0, 0, 5), onTimerFinish));
+  let timer = $state(new Timer(new Duration(0, 0, 5)));
   let timeDisplay = $derived(timer.getTimeDisplay());
 
   let dialogSetTimer: HTMLDialogElement;
@@ -35,15 +36,16 @@
 
   function setNewTimer(hours: number, minutes: number, seconds: number) {
     const duration = new Duration(hours, minutes, seconds);
-    timer = new Timer(duration, onTimerFinish);
+    timer = new Timer(duration);
   }
 
-  async function onTimerFinish() {
+  listen("over", () => {
+    timer.setDone();
     invoke('play_sound').catch(() => {})
     if (permissionGranted) {
       sendNotification({ title: '⌛', body: 'Time\'s up!' });
     }
-  }
+  })
   // TODO: After timer finished or skipped the user shall be asked how much time should be captured
 </script>
 

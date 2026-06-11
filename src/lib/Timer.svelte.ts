@@ -1,5 +1,13 @@
 import { Duration, type TimeDisplay } from "./Duration.svelte";
+import { invoke } from "@tauri-apps/api/core";
 
+function durationFromSeconds(durationInSecs: number) {
+    const hours = Math.floor(durationInSecs / 3600);
+    const minutes = Math.floor((durationInSecs % 3600) / 60);
+    const seconds = durationInSecs % 60;
+
+    return new Duration(hours, minutes, seconds);
+}
 
 export enum TimerState {
     Running,
@@ -12,7 +20,7 @@ export class Timer {
     _intervalId: number | undefined;
     _timerState = $state(TimerState.Paused);
 
-    constructor(private _duration: Duration, private _finishCallback: () => void = () => {}) {
+    constructor(private _duration: Duration) {
         this._timeLeft = _duration.clone();
         this._intervalId = undefined;
     }
@@ -27,38 +35,63 @@ export class Timer {
 
     run() {
         if (this._timerState === TimerState.Paused) {
-            this._timerState = TimerState.Running;
-            this._intervalId = setInterval(() => {
-                if (this._timeLeft.isZero()) {
-                    this._timerState = TimerState.Finished;
-                    clearInterval(this._intervalId as number);
-                    this._finishCallback();
-                } else {
-                    this._timeLeft.subtract1Sec();
-                }
-            }, 1000)
+            invoke("start_timer", { durationInSecs:  this._timeLeft.timeInSeconds })
+                .then(() => {
+                    this._timerState = TimerState.Running;
+                     this._intervalId = setInterval(() => {
+                        invoke<number>("get_time_left")
+                            .then((time_left) => {
+                                this._timeLeft = durationFromSeconds(time_left);
+                                console.log("new time left");
+                            })
+                    }, 100)
+                })
+                .catch(() => {});
+            
+           
         }
     }
 
     pause() {
         if (this._timerState === TimerState.Running) {
-            this._timerState = TimerState.Paused;
-            clearInterval(this._intervalId as number);
+            invoke<number>("stop_timer")
+                .then((time_left) => {
+                    this._timeLeft = durationFromSeconds(time_left);
+                    this._timerState = TimerState.Paused;
+                    this.clearFetchTimeLeft();
+                })
+                .catch((_) => {});
         }
     }
 
     skip() {
         if (this._timerState !== TimerState.Finished) {
-            this._timerState = TimerState.Finished;
-            this._timeLeft.setZero();
+            invoke<number>("stop_timer")
+                .then((_) => {
+                    this.setDone()
+                })
+                .catch((_) => {});
         }
     }
 
     reset() {
         if (this._timerState === TimerState.Running) {
-            clearInterval(this._intervalId as number);
+            invoke<number>("stop_timer").catch((_) => {
+                return;
+            });
+            this.clearFetchTimeLeft();
         }
         this._timerState = TimerState.Paused;
         this._timeLeft = this._duration.clone();
+    }
+
+    setDone() {
+        this.clearFetchTimeLeft();
+        this._timerState = TimerState.Finished;
+        this._timeLeft.setZero();
+    }
+
+    clearFetchTimeLeft() {
+        clearInterval(this._intervalId);
     }
 }
